@@ -3,23 +3,21 @@ name: build
 description: Implement an approved GitHub issue on its own branch, following plan, build and verify stages, until the project's contract passes. Does not push or open a pull request.
 argument-hint: "[issue-number]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view *) Bash(gh issue comment *) Bash(git status *) Bash(git fetch *) Bash(git switch *) Bash(git add *) Bash(git commit *) Bash(make lint) Bash(make ci)
+allowed-tools: Bash(gh issue view *) Bash(gh repo view *) Bash(gh issue comment *) Bash(git status *) Bash(git fetch *) Bash(git switch *) Bash(git add *) Bash(git commit *) Bash(make lint) Bash(make ci)
 ---
 
 Implement issue #$0.
 
-## The spec
-
-!`gh issue view $0 --comments`
-
 ## Stage 1: Gate
 
-Check the spec above has all five parts: problem, goal, acceptance criteria, out of scope, end-to-end check. If any part is missing or vague, stop. List what is missing and suggest `/factory:spec` to fix it. Do not continue.
+Run `gh issue view $0 --comments` and read the full output. If the issue does not exist, stop.
+
+Check the spec has all five parts: problem, goal, acceptance criteria, out of scope, end-to-end check. If any part is missing or vague, stop. List what is missing and suggest `/factory:spec` to fix it. Do not continue.
 
 ## Stage 2: Branch
 
 1. Run `git status --short`. If the working tree is not clean, stop and ask the user what to do with the changes.
-2. Find the default branch with `git symbolic-ref --short refs/remotes/origin/HEAD`, then `git fetch origin`.
+2. Find the default branch with `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`, then `git fetch origin`.
 3. Create the branch from the fresh default branch: `git switch -c <type>/$0-<short-slug> origin/<default>`. Pick `<type>` from Conventional Commits (`feat`, `fix`, `refactor`, ...).
 
 ## Stage 3: Plan
