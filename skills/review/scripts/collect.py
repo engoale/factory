@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Collect everything the reviewer sees into files.
+
+The session that wrote the code never summarizes it for the reviewer. This
+script decides what the reviewer gets, so the review cannot be framed.
+
+Usage: collect.py <issue-number>
+Prints the directory it wrote.
+"""
+
+from __future__ import annotations
+
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+PLUGIN_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(PLUGIN_ROOT / "hooks"))
+from common import ConfigError, git, load_config, protected_match  # noqa: E402
+
+# Added lines that silence a check instead of fixing the cause. Language-agnostic.
+SUPPRESSION = re.compile(
+    r"noqa|type:\s*ignore|pyright:\s*ignore|pragma:\s*no cover|"
+    r"eslint-disable|@ts-ignore|@ts-expect-error|nolint|#\[allow\(|@SuppressWarnings|"
+    r"mark\.(skip|xfail)|\.skip\(|\bxit\(|\.only\(|fail_under|cov-fail-under|--no-verify|"
+    r"filterwarnings|^\s*_\s*=\s*[A-Za-z_][A-Za-z0-9_]*\s*$|"
+    r"except\s*:|except\s+\(?(Base)?Exception\b[^:]*:\s*$|except\b[^:]*:\s*pass\s*$|"
+    r"catch\s*(\([^)]*\))?\s*\{\s*\}"
+)
+TEST_FILE = re.compile(r"(^|/)(tests?|__tests__|spec)/|(^|/)test_[^/]*$|_test\.[a-z]+$|\.(test|spec)\.[a-z]+$")
+TEST_LINE = re.compile(r"\bdef test_|\bassert\b|\bexpect\(|\b(it|test)\(")
+HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+
+
+def scan(diff: str) -> list[str]:
+    """Suspicious lines in a `git diff -U0`: added suppressions and removed test lines."""
+    findings: list[str] = []
+    path = ""
+    line = 0
+    for raw in diff.splitlines():
+        if raw.startswith("+++ "):
+            path = raw[6:] if raw.startswith("+++ b/") else raw[4:]
+            continue
+        if raw.startswith("--- "):
+            continue
+        hunk = HUNK.match(raw)
+        if hunk:
+            line = int(hunk.group(1))
+            continue
+        if raw.startswith("+"):
+            if SUPPRESSION.search(raw[1:]):
+                findings.append(f"{path}:{line}: added: {raw[1:].strip()}")
+            line += 1
+        elif raw.startswith("-") and TEST_FILE.search(path) and TEST_LINE.search(raw[1:]):
+            findings.append(f"{path}: removed test line: {raw[1:].strip()}")
+    return findings
+
+
+def protected(files: list[str], root: Path) -> list[str]:
+    try:
+        patterns = load_config(root).get("protectedPaths", [])
+    except ConfigError as error:
+        return [f"(could not read protected paths: {error})"]
+    return [f"{f}  (protected by {p})" for f in files if (p := protected_match(f, patterns))]
+
+
+def run(*args: str) -> str:
+    return subprocess.run(args, check=True, capture_output=True, text=True).stdout
+
+
+def main() -> int:
+    if len(sys.argv) != 2 or not sys.argv[1].isdigit():
+        print("usage: collect.py <issue-number>", file=sys.stderr)
+        return 2
+    issue = sys.argv[1]
+    root = Path(run("git", "rev-parse", "--show-toplevel").strip())
+    base = run("gh", "repo", "view", "--json", "defaultBranchRef", "-q", ".defaultBranchRef.name").strip()
+    run("git", "fetch", "-q", "origin", base)
+    merge_base = run("git", "merge-base", f"origin/{base}", "HEAD").strip()
+
+    out = Path(run("git", "rev-parse", "--absolute-git-dir").strip()) / "factory" / "review"
+    shutil.rmtree(out, ignore_errors=True)
+    out.mkdir(parents=True)
+
+    files = [f for f in git(root, "diff", "--name-only", merge_base, "HEAD").stdout.splitlines() if f]
+    suspicious = scan(git(root, "diff", "-U0", merge_base, "HEAD").stdout)
+    touched = protected(files, root)
+
+    (out / "head.txt").write_text(run("git", "rev-parse", "HEAD"))
+    (out / "issue.md").write_text(run("gh", "issue", "view", issue, "--comments"))
+    (out / "commits.txt").write_text(run("git", "log", "--format=%h %s", f"{merge_base}..HEAD"))
+    (out / "stat.txt").write_text(run("git", "diff", "--stat", merge_base, "HEAD"))
+    (out / "diff.patch").write_text(run("git", "diff", merge_base, "HEAD"))
+    (out / "suppressions.txt").write_text("\n".join(suspicious) + "\n" if suspicious else "none\n")
+    (out / "protected.txt").write_text("\n".join(touched) + "\n" if touched else "none\n")
+    shutil.copy(PLUGIN_ROOT / "rules" / "contract.md", out / "contract.md")
+
+    print(out)
+    print(f"{len(files)} files changed, {len(suspicious)} suspicious lines, {len(touched)} protected paths touched")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
