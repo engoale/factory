@@ -1,0 +1,26 @@
+{
+  "description": "Factory guardrails: load the contract, guard protected paths and git pushes, gate stopping on lint",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/session_start.py\"", "timeout": 30 }]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(Edit|Write|MultiEdit|NotebookEdit)$",
+        "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/protect_paths.py\"", "timeout": 10 }]
+      },
+      {
+        "matcher": "^Bash$",
+        "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/guard_git.py\"", "timeout": 10 }]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [{ "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/stop_gate.py\"", "timeout": 600 }]
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
 # Development Contract
 
-Universal rules: they apply to any project. Project-specific facts live in `CLAUDE.md`.
-Keep it free of project names and stack details.
+Universal rules: they apply to any project. Project-specific facts live in the project's `CLAUDE.md`.
+The factory plugin loads this file at session start. Keep it free of project names and stack details.
 
 ## Behavior
 
@@ -67,7 +67,7 @@ Follow these four stages for every task beyond a trivial fix.
 - **No ad-hoc dependencies:** Do not add a third-party package without discussing the trade-offs and getting explicit approval.
 - **Breaking changes:** Flag immediately any change that breaks database schemas, local configuration, or downstream APIs.
 - **No hardcoded environment:** Never hardcode secrets, local paths, or credentials. Use environment variables or the project's config loader.
-- **Protected paths:** Do not edit the paths the project lists as protected without asking first.
+- **Protected paths:** Do not edit the paths listed in the project's `.factory.json` without asking first. A hook enforces this for file edits.
 
 ## Issue comment policy
 
