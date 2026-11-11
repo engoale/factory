@@ -67,6 +67,6 @@ When done:
 
 ## Hand-off
 
-Reply with: the branch name, the commit list (`git log --oneline origin/<default>..HEAD`), the verification table, and the next command: `/factory:ship`.
+Reply with: the branch name, the commit list (`git log --oneline origin/<default>..HEAD`), the verification table, and the next command: `/factory:review`.
 
 Do not push. Do not open a pull request.
