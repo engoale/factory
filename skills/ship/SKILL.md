@@ -13,16 +13,21 @@ Ship the current branch as a pull request.
 2. **Gate on the tree.** Run `git status --short`. If there are uncommitted changes, stop and ask the user whether to commit them.
 3. **Find the issue.** Read the issue number from the branch name (`<type>/<number>-<slug>`). If there is none, ask the user for it.
 4. **Verify.** Run the `/factory:check` skill. If anything is FAIL, stop and show the report. Do not ship a failing branch.
-5. **Push.** `git push -u origin <branch>`. Never force-push.
-6. **Open the pull request** with `gh pr create --base <default> --title "<title>" --body-file <tmp file>`:
+5. **Gate on criteria.** Run `gh issue view <number> --comments`. Find the latest `**Verification:**` comment.
+   - If there is none, stop and tell the user to run `/factory:build <number>` first.
+   - If any criterion is NOT MET, stop and list them.
+   - If the issue has more unticked boxes than NEEDS HUMAN rows, stop: something was skipped.
+6. **Push.** `git push -u origin <branch>`. Never force-push.
+7. **Open the pull request** with `gh pr create --base <default> --title "<title>" --body-file <tmp file>`:
    - Title: the main commit's Conventional Commits subject.
    - Body, in this order:
      - `Closes #<number>`
      - **Summary:** 2 to 4 bullets on what changed and why.
-     - **Acceptance criteria:** each criterion from the issue with how it was verified.
+     - **Acceptance criteria:** the verification table from the issue comment, unchanged.
+     - **Needs human before merge:** a checkbox per NEEDS HUMAN criterion, with what to do. Omit the section if there are none.
      - **Evidence:** the `/factory:check` report, verbatim.
      - **Out of scope / follow-ups:** anything deliberately left out.
-7. **Report.** Reply with the pull request URL.
+8. **Report.** Reply with the pull request URL.
 
 ## Rules
 
