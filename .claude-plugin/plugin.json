@@ -1,0 +1,6 @@
+{
+  "name": "factory",
+  "description": "Project-agnostic software factory: spec, build, verify, ship",
+  "version": "0.1.0",
+  "author": { "name": "engoale" }
+}
