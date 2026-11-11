@@ -9,7 +9,14 @@ A project-agnostic Claude Code plugin that runs a spec, build, verify, ship work
 | `/factory:spec <idea>` | Interviews you and drafts a GitHub issue as the spec | Creates the issue after you approve |
 | `/factory:build <issue>` | Branches, plans, implements, verifies every acceptance criterion | Local commits, issue checkboxes and a Verification comment |
 | `/factory:check` | Runs the project's contract and reports with evidence | None |
-| `/factory:ship` | Gates on check and criteria, pushes, opens a pull request | Push and PR, never merges |
+| `/factory:review [issue]` | Independent review by a subagent that never saw the conversation | Review comment on the issue |
+| `/factory:ship` | Gates on check, criteria and an approved review of the exact commit, pushes, opens a pull request | Push and PR, never merges |
+
+Order: `spec`, `build`, `review`, `ship`. `check` runs inside `build` and `ship`, and on its own whenever you want.
+
+## Reviewer
+
+`agents/reviewer.md` has only Read, Grep and Glob, so it cannot change anything. It never receives a summary from the session that wrote the code: `skills/review/scripts/collect.py` writes the issue, the diff, the contract, suspicious lines (silenced checks, removed tests) and touched protected paths into `.git/factory/review/`, and the reviewer gets only that path. It checks acceptance criteria against tests, silenced checks, demonstrable bugs, scope, and the contract, and is told that no findings is a valid outcome.
 
 ## Hooks
 
@@ -50,5 +57,4 @@ cd your-project && claude --plugin-dir ../factory
 
 ## Roadmap
 
-- Phase 4: fresh-context reviewer subagent
 - Phase 5: marketplace and permanent install

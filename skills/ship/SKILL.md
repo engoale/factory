@@ -2,7 +2,7 @@
 name: ship
 description: Verify the current branch, push it, and open a pull request that closes its issue, with the contract's evidence in the description. Never merges.
 disable-model-invocation: true
-allowed-tools: Bash(git status *) Bash(git log *) Bash(git branch *) Bash(gh repo view *) Bash(git push -u origin *) Bash(gh pr create *) Bash(gh issue view *) Bash(make lint) Bash(make ci)
+allowed-tools: Bash(git status *) Bash(git log *) Bash(git branch *) Bash(git rev-parse *) Bash(gh repo view *) Bash(git push -u origin *) Bash(gh pr create *) Bash(gh issue view *) Bash(make lint) Bash(make ci)
 ---
 
 Ship the current branch as a pull request.
@@ -17,17 +17,19 @@ Ship the current branch as a pull request.
    - If there is none, stop and tell the user to run `/factory:build <number>` first.
    - If any criterion is NOT MET, stop and list them.
    - If the issue has more unticked boxes than NEEDS HUMAN rows, stop: something was skipped.
-6. **Push.** `git push -u origin <branch>`. Never force-push.
-7. **Open the pull request** with `gh pr create --base <default> --title "<title>" --body-file <tmp file>`:
+6. **Gate on review.** In the same output, find the latest `**Review:**` comment. Stop and suggest `/factory:review` if there is none, if its verdict is not APPROVE, or if its `Reviewed commit` differs from `git rev-parse HEAD` (the code changed after the review).
+7. **Push.** `git push -u origin <branch>`. Never force-push.
+8. **Open the pull request** with `gh pr create --base <default> --title "<title>" --body-file <tmp file>`:
    - Title: the main commit's Conventional Commits subject.
    - Body, in this order:
      - `Closes #<number>`
      - **Summary:** 2 to 4 bullets on what changed and why.
      - **Acceptance criteria:** the verification table from the issue comment, unchanged.
      - **Needs human before merge:** a checkbox per NEEDS HUMAN criterion, with what to do. Omit the section if there are none.
+     - **Review:** the verdict and reviewed commit, with a link to the review comment.
      - **Evidence:** the `/factory:check` report, verbatim.
      - **Out of scope / follow-ups:** anything deliberately left out.
-8. **Report.** Reply with the pull request URL.
+9. **Report.** Reply with the pull request URL.
 
 ## Rules
 
