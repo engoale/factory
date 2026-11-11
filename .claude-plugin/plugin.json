@@ -1,6 +1,8 @@
 {
   "name": "factory",
   "description": "Project-agnostic software factory: spec, build, verify, ship",
-  "version": "0.1.0",
-  "author": { "name": "engoale" }
+  "version": "0.2.0",
+  "author": {
+    "name": "engoale"
+  }
 }
