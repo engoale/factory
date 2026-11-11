@@ -3,7 +3,7 @@ name: build
 description: Implement an approved GitHub issue on its own branch, following plan, build and verify stages, until the project's contract passes. Does not push or open a pull request.
 argument-hint: "[issue-number]"
 disable-model-invocation: true
-allowed-tools: Bash(gh issue view *) Bash(gh repo view *) Bash(gh issue comment *) Bash(git status *) Bash(git fetch *) Bash(git switch *) Bash(git add *) Bash(git commit *) Bash(make lint) Bash(make ci)
+allowed-tools: Bash(gh issue view *) Bash(gh repo view *) Bash(gh issue comment *) Bash(gh issue edit *) Bash(git status *) Bash(git fetch *) Bash(git switch *) Bash(git add *) Bash(git commit *) Bash(make lint) Bash(make ci)
 ---
 
 Implement issue #$0.
@@ -43,10 +43,30 @@ If a decision changes during the build, post an issue comment using the project'
 1. Run the `/factory:check` skill.
 2. If it fails, fix the cause (never silence a check), commit, and run it again.
 3. After 3 failed attempts on the same failure, stop. Post a `Blocker:` comment on the issue and report to the user.
-4. When it passes, walk through every acceptance criterion and state how it was verified, with evidence.
+
+## Stage 6: Acceptance criteria
+
+Re-read the issue. For every acceptance criterion, copied word for word from the issue (never merged, split, or reworded), assign one status:
+
+- **MET:** proven by a command you ran in this session, with its output. Name the test or command.
+- **NOT MET:** not done, or done only partly.
+- **NEEDS HUMAN:** cannot be proven here (real API keys, a browser, a device). Say exactly what the human must do.
+
+Rules:
+
+- Reading the code is never evidence. "Verified by code inspection" means NOT MET.
+- Coverage of new code counts. If a new file or function has no test exercising it, its criteria are NOT MET.
+- Treat the end-to-end check as one more criterion. Run it if you can. Otherwise mark it NEEDS HUMAN.
+
+If anything is NOT MET, go back to Stage 4 for it. Apply the 3-attempt limit from Stage 5.
+
+When done:
+
+1. Tick the box of every MET criterion in the issue body: write the edited body to a temp file, then `gh issue edit $0 --body-file <file>`. Change nothing else in the body.
+2. Post one comment on the issue (`gh issue comment $0`) titled `**Verification:**`, holding a table with columns Criterion, Status, Evidence, and the `/factory:check` report.
 
 ## Hand-off
 
-Reply with: the branch name, the commit list (`git log --oneline origin/<default>..HEAD`), the `/factory:check` report, the acceptance criteria with their evidence, and the next command: `/factory:ship`.
+Reply with: the branch name, the commit list (`git log --oneline origin/<default>..HEAD`), the verification table, and the next command: `/factory:ship`.
 
 Do not push. Do not open a pull request.
