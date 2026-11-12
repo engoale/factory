@@ -10,7 +10,7 @@ Implement issue #$0.
 
 ## Stage 1: Gate
 
-Run `gh issue view $0 --comments` and read the full output. If the issue does not exist, stop.
+Run `gh issue view $0` for the spec, then `gh issue view $0 --comments` for its discussion. The second command alone omits the body. If the issue does not exist, stop.
 
 Check the spec has all five parts: problem, goal, acceptance criteria, out of scope, end-to-end check. If any part is missing or vague, stop. List what is missing and suggest `/factory:spec` to fix it. Do not continue.
 

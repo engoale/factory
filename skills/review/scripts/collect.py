@@ -10,6 +10,7 @@ Prints the directory it wrote.
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -58,6 +59,19 @@ def scan(diff: str) -> list[str]:
     return findings
 
 
+def render_issue(issue: dict) -> str:
+    """The issue body and every comment as one markdown document.
+
+    `gh issue view --comments` prints only the comments when not on a terminal,
+    which once left the reviewer without the spec. JSON avoids that.
+    """
+    parts = [f"# #{issue['number']} {issue['title']}", f"State: {issue['state']}", issue["body"] or "(empty body)"]
+    for comment in issue.get("comments", []):
+        author = (comment.get("author") or {}).get("login", "unknown")
+        parts.append(f"## Comment by {author} at {comment['createdAt']}\n\n{comment['body']}")
+    return "\n\n".join(parts) + "\n"
+
+
 def protected(files: list[str], root: Path) -> list[str]:
     try:
         patterns = load_config(root).get("protectedPaths", [])
@@ -89,7 +103,8 @@ def main() -> int:
     touched = protected(files, root)
 
     (out / "head.txt").write_text(run("git", "rev-parse", "HEAD"))
-    (out / "issue.md").write_text(run("gh", "issue", "view", issue, "--comments"))
+    fields = "number,title,state,body,comments"
+    (out / "issue.md").write_text(render_issue(json.loads(run("gh", "issue", "view", issue, "--json", fields))))
     (out / "commits.txt").write_text(run("git", "log", "--format=%h %s", f"{merge_base}..HEAD"))
     (out / "stat.txt").write_text(run("git", "diff", "--stat", merge_base, "HEAD"))
     (out / "diff.patch").write_text(run("git", "diff", merge_base, "HEAD"))

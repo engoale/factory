@@ -2,7 +2,7 @@
 name: ship
 description: Verify the current branch, push it, and open a pull request that closes its issue, with the contract's evidence in the description. Never merges.
 disable-model-invocation: true
-allowed-tools: Bash(git status *) Bash(git log *) Bash(git branch *) Bash(git rev-parse *) Bash(gh repo view *) Bash(git push -u origin *) Bash(gh pr create *) Bash(gh issue view *) Bash(make lint) Bash(make ci)
+allowed-tools: Bash(git status *) Bash(git log *) Bash(git branch *) Bash(git rev-parse *) Bash(gh repo view *) Bash(git push -u origin *) Bash(gh pr create *) Bash(gh pr checks *) Bash(gh issue view *) Bash(make lint) Bash(make ci)
 ---
 
 Ship the current branch as a pull request.
@@ -13,7 +13,7 @@ Ship the current branch as a pull request.
 2. **Gate on the tree.** Run `git status --short`. If there are uncommitted changes, stop and ask the user whether to commit them.
 3. **Find the issue.** Read the issue number from the branch name (`<type>/<number>-<slug>`). If there is none, ask the user for it.
 4. **Verify.** Run the `/factory:check` skill. If anything is FAIL, stop and show the report. Do not ship a failing branch.
-5. **Gate on criteria.** Run `gh issue view <number> --comments`. Find the latest `**Verification:**` comment.
+5. **Gate on criteria.** Run `gh issue view <number>` (body with checkboxes) and `gh issue view <number> --comments` (comments). Find the latest `**Verification:**` comment.
    - If there is none, stop and tell the user to run `/factory:build <number>` first.
    - If any criterion is NOT MET, stop and list them.
    - If the issue has more unticked boxes than NEEDS HUMAN rows, stop: something was skipped.
@@ -29,7 +29,8 @@ Ship the current branch as a pull request.
      - **Review:** the verdict and reviewed commit, with a link to the review comment.
      - **Evidence:** the `/factory:check` report, verbatim.
      - **Out of scope / follow-ups:** anything deliberately left out.
-9. **Report.** Reply with the pull request URL.
+9. **Wait for CI.** Run `gh pr checks <pr-number> --watch --interval 30` with a 10-minute command timeout. Local checks passing does not prove CI passes: runtimes and dependency versions can differ.
+10. **Report.** Reply with the pull request URL and each CI check with its result. If any check failed, say so first, name the failing checks, and state that the PR must not be merged until it is green. If CI is still running after the timeout, say which checks are pending.
 
 ## Rules
 

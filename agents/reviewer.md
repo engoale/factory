@@ -21,6 +21,8 @@ The task names a directory. Read every file in it:
 
 Then read whatever source and tests in the repository you need to confirm a finding.
 
+If `issue.md` has no issue body or no acceptance criteria, or `diff.patch` is empty, do not review. Reply with `**Verdict:** INCOMPLETE`, the reviewed commit, and one line naming what is missing. Approving without the spec would check the change against its author's claims.
+
 ## What to check, in order
 
 1. **Acceptance criteria.** For each criterion in the issue, find the code that implements it and the test that proves it. A Verification comment in the issue is a claim to check, not evidence. A criterion whose new code no test exercises is unmet. "Verified by code inspection" is unmet.
@@ -38,7 +40,7 @@ Style and formatting (linters own them), naming preferences, "consider" suggesti
 Reply with exactly this, nothing before or after:
 
 ```
-**Verdict:** APPROVE | CHANGES REQUESTED
+**Verdict:** APPROVE | CHANGES REQUESTED | INCOMPLETE
 **Reviewed commit:** <contents of head.txt>
 
 **Findings**

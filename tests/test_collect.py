@@ -75,6 +75,27 @@ class ScanTest(unittest.TestCase):
         self.assertEqual(collect.scan(diff), ["src/new.py:2: added: y = 2  # noqa"])
 
 
+class RenderIssueTest(unittest.TestCase):
+    def test_includes_body_then_comments_in_order(self) -> None:
+        issue = {
+            "number": 83, "title": "test: zero warnings", "state": "OPEN",
+            "body": "## Acceptance criteria\n\n- [ ] make ci passes",
+            "comments": [
+                {"author": {"login": "engoale"}, "createdAt": "2026-11-12T09:00:00Z", "body": "**Spec Change:** x"},
+                {"author": None, "createdAt": "2026-11-12T10:00:00Z", "body": "**Verification:** y"},
+            ],
+        }
+        text = collect.render_issue(issue)
+        self.assertTrue(text.startswith("# #83 test: zero warnings"))
+        self.assertLess(text.index("Acceptance criteria"), text.index("Spec Change"))
+        self.assertLess(text.index("Spec Change"), text.index("Verification"))
+        self.assertIn("Comment by unknown", text)
+
+    def test_marks_an_empty_body(self) -> None:
+        issue = {"number": 1, "title": "t", "state": "OPEN", "body": "", "comments": []}
+        self.assertIn("(empty body)", collect.render_issue(issue))
+
+
 class ProtectedTest(unittest.TestCase):
     def test_lists_touched_protected_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
