@@ -13,7 +13,7 @@ Get an independent review of the current branch.
 1. **Find the issue.** Use `$ARGUMENTS` if given. Otherwise read the number from the branch name (`git branch --show-current`, format `<type>/<number>-<slug>`). If neither works, ask.
 2. **Gate on the tree.** Run `git status --short`. If there are uncommitted changes, stop: the review covers committed code only.
 3. **Collect.** Run `${CLAUDE_SKILL_DIR}/scripts/collect.py <number>`. It prints a directory and a one-line summary.
-4. **Review.** Invoke the `factory:reviewer` subagent in the foreground and wait for it. Its task is exactly this sentence and nothing else:
+4. **Review.** Invoke the `factory:reviewer` subagent in the foreground (not as a background task) and wait for it. Its task is exactly this sentence and nothing else:
 
    `Review the change prepared in <directory>.`
 
@@ -22,6 +22,7 @@ Get an independent review of the current branch.
 6. **Report.** Reply with the reviewer's output unchanged, then the next step:
    - **APPROVE:** `/factory:ship`
    - **CHANGES REQUESTED:** fix each BLOCKING finding and unmet criterion, commit, then run `/factory:review` again.
+   - **INCOMPLETE:** the review inputs are broken. Show what is missing; this is a factory bug, not a problem with the branch.
 
 ## Rules
 
