@@ -96,6 +96,38 @@ class RenderIssueTest(unittest.TestCase):
         self.assertIn("(empty body)", collect.render_issue(issue))
 
 
+class CiSummaryTest(unittest.TestCase):
+    head = "a" * 40
+
+    def test_no_pull_request(self) -> None:
+        self.assertIn("CI has not run", collect.ci_summary(None, self.head))
+
+    def test_pull_request_on_another_commit_is_not_evidence(self) -> None:
+        pr = {"number": 7, "headRefOid": "b" * 40, "statusCheckRollup": [{"name": "Tests", "conclusion": "SUCCESS"}]}
+        text = collect.ci_summary(pr, self.head)
+        self.assertIn("CI has not run on this commit", text)
+        self.assertNotIn("SUCCESS", text)
+
+    def test_lists_each_check_for_this_commit(self) -> None:
+        pr = {
+            "number": 7,
+            "headRefOid": self.head,
+            "statusCheckRollup": [
+                {"name": "Tests", "conclusion": "FAILURE", "status": "COMPLETED"},
+                {"name": "Lint", "conclusion": "", "status": "IN_PROGRESS"},
+                {"context": "deploy/check", "state": "SUCCESS"},
+            ],
+        }
+        self.assertEqual(
+            collect.ci_summary(pr, self.head),
+            f"PR #7, commit {self.head}:\n- Tests: FAILURE\n- Lint: IN_PROGRESS\n- deploy/check: SUCCESS\n",
+        )
+
+    def test_pull_request_without_checks(self) -> None:
+        pr = {"number": 7, "headRefOid": self.head, "statusCheckRollup": []}
+        self.assertIn("no CI checks reported", collect.ci_summary(pr, self.head))
+
+
 class ProtectedTest(unittest.TestCase):
     def test_lists_touched_protected_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
