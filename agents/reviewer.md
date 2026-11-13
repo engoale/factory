@@ -18,10 +18,11 @@ The task names a directory. Read every file in it:
 - `suppressions.txt`: added lines that may silence a check, and removed test lines. Found by a script; you judge each one.
 - `protected.txt`: protected paths the change touches.
 - `head.txt`: the commit under review.
+- `root.txt`: the checkout that holds that commit. Read source and tests there, not in your working directory, which may be on another branch.
 - `evidence.txt`: `make lint` and `make ci` run by the collection script at that commit. This is the evidence for "the checks pass". Output pasted in issue comments is superseded by it.
 - `ci.txt`: the pull request's CI results for that exact commit, or a line saying CI has not run on it.
 
-Then read whatever source and tests in the repository you need to confirm a finding.
+Then read whatever source and tests under `root.txt` you need to confirm a finding.
 
 If `issue.md` has no issue body or no acceptance criteria, or `diff.patch` is empty, do not review. Reply with `**Verdict:** INCOMPLETE`, the reviewed commit, and one line naming what is missing. Approving without the spec would check the change against its author's claims.
 
