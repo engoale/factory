@@ -12,7 +12,21 @@ A project-agnostic Claude Code plugin that runs a spec, build, verify, ship work
 | `/factory:review [issue]` | Independent review by a subagent that never saw the conversation | Review comment on the issue |
 | `/factory:ship` | Gates on check, criteria and an approved review of the exact commit, pushes, opens or updates a draft PR, waits for CI, marks it ready only when green | Push and PR, never merges |
 
+| `/factory:batch <issue> ...` | Runs build, review and ship for up to 5 issues in parallel worktrees, stopping each at its first failed gate | Same as the three stages; never merges |
+| `/factory:status [issue ...]` | One row per issue (PR, draft, CI, verified, review, next step) and a merge order from shared files | None |
+
 Order: `spec`, `build`, `review`, `ship`. `check` runs inside `build` and `ship`, and on its own whenever you want.
+
+## Batch
+
+`/factory:batch` is the only way to build several issues at once. Claude cannot start it on its own, and `build` stays user-only. Your session coordinates, because agents cannot start other agents:
+
+1. A `factory:builder` agent per issue (at most 3 at a time), each in its own worktree. It follows `skills/build/SKILL.md` with unattended rules: it posts its plan instead of waiting for approval, turns any open choice into a Blocker and stops, resumes existing branches at verification, and never pushes.
+2. Review per issue, exactly as `/factory:review` does.
+3. Ship per approved issue, as `/factory:ship` does: draft PR, wait for CI, ready only when green.
+4. The status board and merge order.
+
+Merging stays yours. PRs that share files still merge one at a time, each followed by merging the default branch into the next and a fresh review.
 
 ## Reviewer
 
