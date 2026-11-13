@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Oldest Python the hooks support, and the newest in use.
+        python: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Lint and tests
+        run: make ci
+      - name: Version bump
+        if: github.event_name == 'pull_request'
+        run: python3 scripts/check_version_bump.py origin/${{ github.base_ref }}
+
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate plugin and marketplace
+        run: npx -y @anthropic-ai/claude-code plugin validate .

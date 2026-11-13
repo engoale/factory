@@ -1,0 +1,14 @@
+{
+  "name": "engoale",
+  "owner": {
+    "name": "engoale"
+  },
+  "description": "engoale's Claude Code plugins",
+  "plugins": [
+    {
+      "name": "factory",
+      "source": "./",
+      "description": "Project-agnostic software factory: spec, build, review, ship, with hooks that enforce the contract"
+    }
+  ]
+}

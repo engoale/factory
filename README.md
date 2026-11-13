@@ -47,6 +47,46 @@ Optional `.factory.json` at the project root:
 
 Patterns follow gitignore rules: `dir/` covers everything below it, a pattern without `/` matches a file name anywhere, `!` un-protects, and the last match wins.
 
+## Install
+
+The repository is its own marketplace (`engoale`), listed in `.claude-plugin/marketplace.json`.
+
+**In one project, for everyone who clones it** (recommended). Commit this as the project's `.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "engoale": {
+      "source": { "source": "github", "repo": "engoale/factory" },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "factory@engoale": true
+  }
+}
+```
+
+Claude Code registers the marketplace once you trust the folder, and installs the plugin at the next session start.
+
+**For yourself, in every project:**
+
+```bash
+claude plugin marketplace add engoale/factory
+claude plugin install factory@engoale --scope user
+```
+
+On Claude Code 2.1.275 or later, `/plugin install factory --marketplace engoale/factory` does both in one step.
+
+Check with `/plugin`: `factory@engoale` is listed and enabled.
+
+## Updates
+
+Installed copies are cached by version. A change reaches users only when `.claude-plugin/plugin.json`'s `version` goes up, which CI enforces on every pull request (`scripts/check_version_bump.py`).
+
+- With `"autoUpdate": true`, Claude Code fetches new versions in the background. Third-party marketplaces have auto-update off by default.
+- By hand: `claude plugin marketplace update engoale`, then `claude plugin update factory@engoale`, then `/reload-plugins`.
+
 ## Develop
 
 ```bash
@@ -55,6 +95,6 @@ claude plugin validate .
 cd your-project && claude --plugin-dir ../factory
 ```
 
-## Roadmap
+A `--plugin-dir` copy overrides the installed `factory@engoale` for that session, so you can test changes without uninstalling.
 
-- Phase 5: marketplace and permanent install
+Version numbers: bump the minor version for new behavior and the patch version for fixes. Docs, tests, CI and `scripts/` need no bump.
