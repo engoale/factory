@@ -34,7 +34,8 @@ Follow these four stages for every task beyond a trivial fix.
 
 - One issue, one branch, one pull request.
 - Branch name: `<type>/<issue-number>-<short-slug>`, for example `fix/142-token-refresh`.
-- Never push to the default branch. Never force-push a shared branch.
+- Never push to the default branch. Never force-push, and never rebase a branch that is already pushed.
+- To bring the default branch into a pushed branch, merge it in: `git merge origin/<default>`. With squash merging, those merge commits never reach the default branch.
 - Implement one logical component at a time.
 - Bug fixes start with a failing test that reproduces the bug, then the fix.
 - Commit messages follow Conventional Commits: `<type>(<scope>): <description>`.

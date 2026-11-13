@@ -50,7 +50,8 @@ Re-read the issue. For every acceptance criterion, copied word for word from the
 
 - **MET:** proven by a command you ran in this session, with its output. Name the test or command.
 - **NOT MET:** not done, or done only partly.
-- **NEEDS HUMAN:** cannot be proven here (real API keys, a browser, a device). Say exactly what the human must do.
+- **PENDING CI:** can only be proven by CI on the pull request (a CI job passes, an image builds, all checks are green). `/factory:ship` settles it.
+- **NEEDS HUMAN:** cannot be proven here or in CI (real API keys, a browser, a device). Say exactly what the human must do.
 
 Rules:
 

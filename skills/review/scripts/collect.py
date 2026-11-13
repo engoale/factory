@@ -59,6 +59,23 @@ def scan(diff: str) -> list[str]:
     return findings
 
 
+def ci_summary(pr: dict | None, head: str) -> str:
+    """The pull request's CI results for exactly this commit, or why there are none."""
+    if pr is None:
+        return "No pull request for this branch yet: CI has not run.\n"
+    if pr.get("headRefOid") != head:
+        return f"PR #{pr['number']} points at {pr.get('headRefOid')}, not {head}: CI has not run on this commit.\n"
+    checks = pr.get("statusCheckRollup") or []
+    if not checks:
+        return f"PR #{pr['number']}: no CI checks reported for {head}.\n"
+    lines = [f"PR #{pr['number']}, commit {head}:"]
+    for check in checks:
+        name = check.get("name") or check.get("context") or "unnamed"
+        result = check.get("conclusion") or check.get("state") or check.get("status") or "unknown"
+        lines.append(f"- {name}: {result}")
+    return "\n".join(lines) + "\n"
+
+
 def render_issue(issue: dict) -> str:
     """The issue body and every comment as one markdown document.
 
@@ -102,7 +119,8 @@ def main() -> int:
     suspicious = scan(git(root, "diff", "-U0", merge_base, "HEAD").stdout)
     touched = protected(files, root)
 
-    (out / "head.txt").write_text(run("git", "rev-parse", "HEAD"))
+    head = run("git", "rev-parse", "HEAD").strip()
+    (out / "head.txt").write_text(head + "\n")
     fields = "number,title,state,body,comments"
     (out / "issue.md").write_text(render_issue(json.loads(run("gh", "issue", "view", issue, "--json", fields))))
     (out / "commits.txt").write_text(run("git", "log", "--format=%h %s", f"{merge_base}..HEAD"))
@@ -111,6 +129,19 @@ def main() -> int:
     (out / "suppressions.txt").write_text("\n".join(suspicious) + "\n" if suspicious else "none\n")
     (out / "protected.txt").write_text("\n".join(touched) + "\n" if touched else "none\n")
     shutil.copy(PLUGIN_ROOT / "rules" / "contract.md", out / "contract.md")
+
+    # Evidence produced here, at the reviewed commit, so the reviewer never has to
+    # trust output pasted by the session that wrote the code.
+    runner = PLUGIN_ROOT / "skills" / "check" / "scripts" / "run.sh"
+    evidence = [subprocess.run([str(runner), target], cwd=root, capture_output=True, text=True).stdout
+                for target in ("lint", "ci")]
+    (out / "evidence.txt").write_text(f"Run by collect.py at {head}\n\n" + "\n".join(evidence))
+
+    pr_view = subprocess.run(
+        ["gh", "pr", "view", "--json", "number,headRefOid,statusCheckRollup"], cwd=root, capture_output=True, text=True
+    )
+    pr = json.loads(pr_view.stdout) if pr_view.returncode == 0 else None
+    (out / "ci.txt").write_text(ci_summary(pr, head))
 
     print(out)
     print(f"{len(files)} files changed, {len(suspicious)} suspicious lines, {len(touched)} protected paths touched")
