@@ -4,13 +4,15 @@
 The session that wrote the code never summarizes it for the reviewer. This
 script decides what the reviewer gets, so the review cannot be framed.
 
-Usage: collect.py <issue-number>
+Usage: collect.py <issue-number> [worktree]
+Reviews the branch checked out in the worktree (default: the current directory).
 Prints the directory it wrote.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -102,10 +104,12 @@ def run(*args: str) -> str:
 
 
 def main() -> int:
-    if len(sys.argv) != 2 or not sys.argv[1].isdigit():
-        print("usage: collect.py <issue-number>", file=sys.stderr)
+    if len(sys.argv) not in (2, 3) or not sys.argv[1].isdigit():
+        print("usage: collect.py <issue-number> [worktree]", file=sys.stderr)
         return 2
     issue = sys.argv[1]
+    if len(sys.argv) == 3:
+        os.chdir(sys.argv[2])
     root = Path(run("git", "rev-parse", "--show-toplevel").strip())
     base = run("gh", "repo", "view", "--json", "defaultBranchRef", "-q", ".defaultBranchRef.name").strip()
     run("git", "fetch", "-q", "origin", base)
@@ -121,6 +125,7 @@ def main() -> int:
 
     head = run("git", "rev-parse", "HEAD").strip()
     (out / "head.txt").write_text(head + "\n")
+    (out / "root.txt").write_text(f"{root}\n")
     fields = "number,title,state,body,comments"
     (out / "issue.md").write_text(render_issue(json.loads(run("gh", "issue", "view", issue, "--json", fields))))
     (out / "commits.txt").write_text(run("git", "log", "--format=%h %s", f"{merge_base}..HEAD"))
